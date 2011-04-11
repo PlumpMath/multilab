@@ -28,7 +28,7 @@ namespace detail {
 
   template<typename T> struct cpp2matlab { };
   template<typename T> struct cpp_type_name_fctor { };
-  template<typename T> static char* cpp_type_name() { 
+  template<typename T> static const char* cpp_type_name() { 
     cpp_type_name_fctor<T> f;
     return f();
   }
@@ -37,7 +37,7 @@ namespace detail {
     static const mxClassID matlab_class = CLASSID; \
   }; \
   template<> struct cpp_type_name_fctor<TYPE> { \
-    char* operator()() const { \
+    const char* operator()() const { \
       return NAME; \
     } \
   };
@@ -67,7 +67,7 @@ namespace detail {
   #undef CPP2MATLAB
   #undef MATLAB2CPP
 
-  static char* matlab_type_name(mxClassID id) {
+  static const char* matlab_type_name(mxClassID id) {
     switch(id) {
       case mxCHAR_CLASS: return "char";
       case mxDOUBLE_CLASS: return "double";
@@ -312,7 +312,7 @@ extern "C" { \
       funct (nlhs, (multilab::matlab::untyped_array*)lhs_buf, \
           nrhs, (multilab::matlab::untyped_array*)rhs_buf); \
       memcpy(lhs, lhs_buf, sizeof(nlhs * sizeof(mxArray*))); \
-    } catch(std::runtime_error &e) { \
+    } catch(std::exception &e) { \
       mexPrintf("exception in MEX execution: %s\n", e.what()); \
       mexErrMsgTxt("fatal exception ocurred, aborting MEX execution"); \
     } \
