@@ -6,7 +6,7 @@ MATLAB=/opt/matlab2008b
 MEX=${MATLAB}/bin/mex
 
 CXX=clang++
-CXXFLAGS=-O0 -g3 -Wall -Wextra -I${CLROOT} -I${MULTILABROOT} \
+CXXFLAGS=-g3 -Wall -Wextra -I${CLROOT} -I${MULTILABROOT} \
 				 -I${MATLAB}/extern/include -fPIC
 
 OBJS= kernel.opencl.o mandelbrot.o
