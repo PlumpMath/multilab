@@ -2,6 +2,8 @@
 #include "cl_wrapper/cl_wrapper.hpp"
 #include "kernel.opencl.hpp"
 
+#include <algorithm>
+
 namespace ml = multilab::matlab;
 
 void mandelbrot(int nlhs, ml::untyped_array *lhs, 
@@ -12,10 +14,11 @@ void mandelbrot(int nlhs, ml::untyped_array *lhs,
   ml::typed_array<float> input = rhs[0];
   if(!input.is_complex())
     throw std::runtime_error("input must be complex");
-  if(input.num_dims() != 1)
-    throw std::runtime_error("input must be a vector");
 
-  size_t num_input = input.dims()[0];
+  size_t w = input.dims()[0];
+  size_t h = input.dims()[1];
+
+  size_t num_input = std::max(w,h);
   ml::typed_array<float> output(1, &num_input, false);
 
   cl::platform platform = cl::platform::platforms()[0];
@@ -33,13 +36,17 @@ void mandelbrot(int nlhs, ml::untyped_array *lhs,
   cl::program program(context, kernel_source);
   program.build();
 
+  cl_int param_num_input = num_input;
+  cl_int num_iter = 200;
   cl::kernel kernel = program.get_kernel("mandelbrot");
   kernel.set_arg(0, input_real)
     .set_arg(1, input_imag)
     .set_arg(2, out_buf)
-    .set_arg(3, num_input);
+    .set_arg(3, param_num_input)
+    .set_arg(4, num_iter);
 
-  queue.run_kernel(kernel, 1, &num_input, NULL).wait();
+  size_t block_size = 256;
+  queue.run_kernel(kernel, 1, &num_input, &block_size).wait();
   queue.read_buffer(out_buf, 0, sizeof(float)*num_input, 
       output.real_ptr()).wait();
 
