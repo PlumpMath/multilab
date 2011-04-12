@@ -80,6 +80,7 @@ namespace detail {
       case mxUINT32_CLASS: return "uint32";
       case mxINT64_CLASS: return "int64";
       case mxUINT64_CLASS: return "uint64";
+      default: return "unhandled type";
     }
   }
 }
