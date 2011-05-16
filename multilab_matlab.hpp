@@ -80,7 +80,7 @@ namespace detail {
       case mxUINT32_CLASS: return "uint32";
       case mxINT64_CLASS: return "int64";
       case mxUINT64_CLASS: return "uint64";
-      default: return "unhandled type";
+      default: throw std::runtime_error("unhandled MATLAB type");
     }
   }
 }
@@ -172,7 +172,7 @@ public:
   std::vector<size_t> get_dims() const {
     size_t nd = num_dims();
     std::vector<size_t> to_return(nd);
-    mwSize *ml_dims = dims();
+    const mwSize *ml_dims = dims();
     for(size_t i=0; i<nd; ++i) to_return[i] = ml_dims[i];
     return to_return;
   }
