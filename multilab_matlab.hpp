@@ -1,6 +1,8 @@
 #ifndef _MULTILAB_MATLAB_HPP_
 #define _MULTILAB_MATLAB_HPP_
 
+// MATLAB includes
+#include <engine.h>
 #include <matrix.h>
 #include <mex.h>
 
@@ -9,6 +11,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <boost/noncopyable.hpp>
 
 #include <alloca.h>
 #include <stdint.h>
@@ -128,28 +132,28 @@ typedef untyped_array_<0> untyped_array;
  * for the numerical types.
  */
 template<typename T>
-class typed_array {
+class typed_array : public untyped_array {
 public:
   /** \brief wrap the given array */
   typed_array(mxArray *a) 
-      : ptr_(a) {
+      : untyped_array(a) {
     check_type();
   }
   /** \brief wrap the given array */
   typed_array(const untyped_array &a) 
-      : ptr_(a.get_ptr()) {
+      : untyped_array(a.get_ptr()) {
     check_type();
   }
   /** \brief create a new array */
   typed_array(size_t rows, size_t cols, bool cpx) 
-      : ptr_(mxCreateNumericMatrix(rows, cols, 
+      : untyped_array(mxCreateNumericMatrix(rows, cols, 
             detail::cpp2matlab<T>::matlab_class,
             cpx ? mxCOMPLEX : mxREAL)) {
     if(!ptr_) throw std::runtime_error("error creating MATLAB array");
   }
   /** \brief create a new array */
   typed_array(size_t ndim, size_t *mdims, bool cpx) 
-      : ptr_(NULL) {
+      : untyped_array(NULL) {
     mwSize matlab_dims[ndim];
     for(size_t i=0; i<ndim; ++i) matlab_dims[i] = mdims[i];
     ptr_ = mxCreateNumericArray(ndim, matlab_dims, 
@@ -159,7 +163,8 @@ public:
   }
 
   /** \brief wrap the given array */
-  typed_array(const typed_array &r) : ptr_(mxDuplicateArray(r.ptr_)) { 
+  typed_array(const typed_array &r) 
+      : untyped_array(mxDuplicateArray(r.ptr_)) { 
     check_type(); 
   }
 
@@ -188,6 +193,13 @@ public:
     return reinterpret_cast<T*>(mxGetImagData(ptr_));
   }
 
+  T& real(int i) const {
+    return real_ptr()[i];
+  }
+  T& imag(int i) const {
+    return imag_ptr()[i];
+  }
+
   typed_array& operator=(const typed_array &a) {
     if(ptr_ == a.ptr_) return *this;
     ptr_ = mxDuplicateArray(a.ptr_);
@@ -212,35 +224,29 @@ public:
   operator mxArray*() {
     return ptr_;
   }
-  operator untyped_array() {
-    return untyped_array_<0>(ptr_);
-  }
-private:
-  mxArray *ptr_;
 };
 
 template<>
-class typed_array<char> {
+class typed_array<char> : public untyped_array {
 public:
   typed_array(mxArray *a)
-      : ptr_(a) {
+      : untyped_array(a) {
     check_type();
   }
   typed_array(const untyped_array &a) 
-      : ptr_(a.get_ptr()) {
+      : untyped_array(a.get_ptr()) {
     check_type();
   }
   typed_array(size_t ndim, size_t *mdims) 
-      : ptr_(NULL) {
+      : untyped_array(NULL) {
     mwSize matlab_dims[ndim];
     for(size_t i=0; i<ndim; ++i) matlab_dims[i] = mdims[i];
     ptr_ = mxCreateCharArray(ndim, matlab_dims);
     if(!ptr_) throw std::runtime_error("error creating MATLAB array");
   }
-  ~typed_array() {
-  }
   // copy ctors
-  typed_array(const typed_array &r) : ptr_(mxDuplicateArray(r.ptr_)) { 
+  typed_array(const typed_array &r) 
+      : untyped_array(mxDuplicateArray(r.ptr_)) { 
     check_type(); 
   }
 
@@ -290,13 +296,46 @@ public:
   operator mxArray*() {
     return ptr_;
   }
-  operator untyped_array() {
-    return untyped_array_<0>(ptr_);
+};
+
+/** \brief instance of a MATLAB engine for embedding in python (or c++) */
+template<int UNUSED=0>
+class engine_ {
+public:
+  engine_()
+      : eng_(engOpen("\0")) { 
+    if(eng_ == NULL) 
+      throw std::runtime_error("error starting MATLAB engine");
+  }
+  engine_(const std::string &command)
+      : eng_(engOpen(command.c_str())) {
+    if(eng_ == NULL)
+      throw std::runtime_error("error starting MATLAB engine");
+  }
+  ~engine_() {
+    engClose(eng_);
+  }
+
+  untyped_array get(const std::string &name) {
+    mxArray *tmp = engGetVariable(eng_, name.c_str());
+    if(tmp == NULL)
+      throw std::runtime_error("error getting variable from MATLAB");
+    return untyped_array(tmp);
+  }
+  void put(const std::string &name, untyped_array a) {
+    if(engPutVariable(eng_, name.c_str(), a) == 1)
+      throw std::runtime_error("error putting variable into MATLAB");
+  }
+  void eval(const std::string &str) {
+    if(engEvalString(eng_, str.c_str()) == 1) {
+      throw std::runtime_error("error evaluating MATLAB command");
+    }
   }
 
 private:
-  mxArray *ptr_;
+  Engine *eng_;
 };
+typedef engine_<0> engine;
 
 }}
 
