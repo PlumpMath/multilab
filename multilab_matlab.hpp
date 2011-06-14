@@ -92,7 +92,12 @@ namespace detail {
 
 /** \brief untyped array, essentially a wrapper for a raw mxArray* */
 template<bool SCOPED=false>
-class untyped_array { };
+class untyped_array { 
+  private:
+    untyped_array() { }
+    template<bool B> untyped_array(const untyped_array<B> &c) { }
+    template<bool B> void operator=(const untyped_array<B> &c) { }
+};
 
 // implementation of unscoped (not destroyed) untyped_array
 template<>
@@ -105,7 +110,7 @@ public:
   // construction from any untyped_array is ok
   template<bool B>
   untyped_array(const untyped_array<B> &a) 
-      : ptr_(a.ptr_) { }
+      : ptr_(a.get_ptr()) { }
   ~untyped_array() {
     // do not delete
   }
@@ -182,8 +187,10 @@ protected:
 
 private:
   // construction/assignment from any untyped_array is forbidden
-  template<bool B> untyped_array(const untyped_array<B> &b) { }
-  template<bool B> void operator=(const untyped_array<B> &b) { }
+  untyped_array(const untyped_array<false> &b) { }
+  untyped_array(const untyped_array<true> &b) { }
+  void operator=(const untyped_array<false> &b) { }
+  void operator=(const untyped_array<true> &b) { }
 };
 
 /** \brief implements a typed mxArray wrapper.  this specialization is
@@ -238,8 +245,8 @@ public:
   }
 
   /** \brief wrap the given array */
-  template<typename B>
-  typed_array(const typed_array<B> &r) 
+  template<bool B>
+  typed_array(const typed_array<T, B> &r) 
       : untyped_array<SCOPED>(r) { 
     check_type(); 
   }
@@ -289,6 +296,10 @@ public:
         << detail::matlab_type_name(class_id);
       throw std::runtime_error(ss.str());
     }
+  }
+
+  typed_array& operator=(mxArray *m) {
+    return untyped_array<SCOPED>::operator=(m);
   }
 };
 
