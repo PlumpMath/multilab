@@ -7,6 +7,7 @@
 #include <mex.h>
 
 #include <complex>
+#include <iostream>
 #include <stdexcept>
 #include <sstream>
 #include <string>
@@ -90,14 +91,23 @@ namespace detail {
 }
 
 /** \brief untyped array, essentially a wrapper for a raw mxArray* */
-template<int UNUSED=0>
-class untyped_array_ {
+template<bool SCOPED=false>
+class untyped_array { };
+
+// implementation of unscoped (not destroyed) untyped_array
+template<>
+class untyped_array<false> {
 public:
   /** \brief wrap a given mxArray */
-  untyped_array_(mxArray *ptr) 
+  untyped_array(mxArray *ptr) 
       : ptr_(ptr) {
   }
-  ~untyped_array_() {
+  // construction from any untyped_array is ok
+  template<bool B>
+  untyped_array(const untyped_array<B> &a) 
+      : ptr_(a.ptr_) { }
+  ~untyped_array() {
+    // do not delete
   }
 
   /** \brief MATLAB class checking */
@@ -113,9 +123,53 @@ public:
     return get_type() == c;
   }
 
+  // assignment from any untyped_array is okay.
+  template<bool B>
+  untyped_array<false>& operator=(const untyped_array<B> &a) {
+    ptr_ = a.ptr_;
+    return *this;
+  }
+
   /** \brief access the underlying mxArray */
-  operator mxArray*() {
+  mxArray* get_ptr() const {
     return ptr_;
+  }
+protected:
+  mxArray *ptr_;
+};
+
+// implementation of scoped untyped_array
+template<>
+class untyped_array<true> {
+public:
+  /** \brief wrap a given mxArray */
+  untyped_array(mxArray *ptr) 
+      : ptr_(ptr) {
+  }
+  ~untyped_array() {
+    if(ptr_) {
+      mxDestroyArray(ptr_);
+    }
+  }
+
+  /** \brief MATLAB class checking */
+  mxClassID get_type() const {
+    return mxGetClassID(ptr_);
+  }
+  /** \brief MATLAB class checking */
+  template<typename T> bool is_of_type() const {
+    return get_type() == detail::cpp2matlab<T>::matlab_class;
+  }
+  /** \brief MATLAB class checking */
+  bool is_of_type(mxClassID c) const {
+    return get_type() == c;
+  }
+
+  untyped_array<true>& operator=(mxArray *a) {
+    if(a == ptr_) return *this;
+    if(ptr_) mxDestroyArray(ptr_);
+    ptr_ = a;
+    return *this;
   }
 
   /** \brief access the underlying mxArray */
@@ -125,54 +179,76 @@ public:
 
 protected:
   mxArray *ptr_;
+
+private:
+  // construction/assignment from any untyped_array is forbidden
+  template<bool B> untyped_array(const untyped_array<B> &b) { }
+  template<bool B> void operator=(const untyped_array<B> &b) { }
 };
-typedef untyped_array_<0> untyped_array;
 
 /** \brief implements a typed mxArray wrapper.  this specialization is
  * for the numerical types.
  */
-template<typename T>
-class typed_array : public untyped_array {
+template<typename T, bool SCOPED=false>
+class typed_array : public untyped_array<SCOPED> {
 public:
   /** \brief wrap the given array */
   typed_array(mxArray *a) 
-      : untyped_array(a) {
+      : untyped_array<SCOPED>(a) {
     check_type();
   }
   /** \brief wrap the given array */
-  typed_array(const untyped_array &a) 
-      : untyped_array(a.get_ptr()) {
+  template<bool B>
+  typed_array(const untyped_array<B> &a) 
+      : untyped_array<SCOPED>(a) {
     check_type();
   }
   /** \brief create a new array */
   typed_array(size_t rows, size_t cols, bool cpx) 
-      : untyped_array(mxCreateNumericMatrix(rows, cols, 
+      : untyped_array<SCOPED>(mxCreateNumericMatrix(rows, cols, 
             detail::cpp2matlab<T>::matlab_class,
             cpx ? mxCOMPLEX : mxREAL)) {
-    if(!ptr_) throw std::runtime_error("error creating MATLAB array");
+    if(!untyped_array<SCOPED>::ptr_) 
+      throw std::runtime_error("error creating MATLAB array");
+#ifndef NDEBUG
+    if(!SCOPED) {
+      std::cerr 
+        << "WARNING: unscoped typed_array used to hold new array; "
+        << "memory leaks are likely.\n";
+    }
+#endif
   }
   /** \brief create a new array */
   typed_array(size_t ndim, size_t *mdims, bool cpx) 
-      : untyped_array(NULL) {
+      : untyped_array<SCOPED>(NULL) {
     mwSize matlab_dims[ndim];
     for(size_t i=0; i<ndim; ++i) matlab_dims[i] = mdims[i];
-    ptr_ = mxCreateNumericArray(ndim, matlab_dims, 
+    untyped_array<SCOPED>::ptr_ = mxCreateNumericArray(ndim, matlab_dims, 
         detail::cpp2matlab<T>::matlab_class,
         cpx ? mxCOMPLEX : mxREAL);
-    if(!ptr_) throw std::runtime_error("error creating MATLAB array");
+    if(!untyped_array<SCOPED>::ptr_) 
+      throw std::runtime_error("error creating MATLAB array");
+#ifndef NDEBUG
+    if(!SCOPED) {
+      std::cerr
+        << "WARNING: unscoped typed_array used to hold new array; "
+        << "memory leaks are likely.\n";
+    }
+#endif
   }
 
   /** \brief wrap the given array */
-  typed_array(const typed_array &r) 
-      : untyped_array(mxDuplicateArray(r.ptr_)) { 
+  template<typename B>
+  typed_array(const typed_array<B> &r) 
+      : untyped_array<SCOPED>(r) { 
     check_type(); 
   }
 
   size_t num_dims() const {
-    return mxGetNumberOfDimensions(ptr_);
+    return mxGetNumberOfDimensions(untyped_array<SCOPED>::ptr_);
   }
   const mwSize* dims() const {
-    return mxGetDimensions(ptr_);
+    return mxGetDimensions(untyped_array<SCOPED>::ptr_);
   }
   std::vector<size_t> get_dims() const {
     size_t nd = num_dims();
@@ -183,14 +259,14 @@ public:
   }
 
   bool is_complex() const {
-    return mxIsComplex(ptr_);
+    return mxIsComplex(untyped_array<SCOPED>::ptr_);
   }
 
   T* real_ptr() const {
-    return reinterpret_cast<T*>(mxGetData(ptr_));
+    return reinterpret_cast<T*>(mxGetData(untyped_array<SCOPED>::ptr_));
   }
   T* imag_ptr() const {
-    return reinterpret_cast<T*>(mxGetImagData(ptr_));
+    return reinterpret_cast<T*>(mxGetImagData(untyped_array<SCOPED>::ptr_));
   }
 
   T& real(int i) const {
@@ -200,18 +276,12 @@ public:
     return imag_ptr()[i];
   }
 
-  typed_array& operator=(const typed_array &a) {
-    if(ptr_ == a.ptr_) return *this;
-    ptr_ = mxDuplicateArray(a.ptr_);
-    return *this;
-  }
-  typed_array& operator=(mxArray *a) {
-    ptr_ = a;
-    return *this;
+  mxArray* duplicate() const {
+    return mxDuplicateArray(untyped_array<SCOPED>::ptr_);
   }
 
   void check_type() {
-    mxClassID class_id = mxGetClassID(ptr_);
+    mxClassID class_id = mxGetClassID(untyped_array<SCOPED>::ptr_);
     if(class_id != detail::cpp2matlab<T>::matlab_class) {
       std::stringstream ss;
       ss << "MATLAB array type mismatch: expected " 
@@ -220,48 +290,44 @@ public:
       throw std::runtime_error(ss.str());
     }
   }
-
-  operator mxArray*() {
-    return ptr_;
-  }
 };
 
-template<>
-class typed_array<char> : public untyped_array {
+template<bool SCOPED>
+class typed_array<char, SCOPED> : public untyped_array<SCOPED> {
 public:
   typed_array(mxArray *a)
-      : untyped_array(a) {
+      : untyped_array<SCOPED>(a) {
     check_type();
   }
-  typed_array(const untyped_array &a) 
-      : untyped_array(a.get_ptr()) {
+  template<bool B>
+  typed_array(const untyped_array<B> &a) 
+      : untyped_array<SCOPED>(a) {
     check_type();
   }
   typed_array(size_t ndim, size_t *mdims) 
-      : untyped_array(NULL) {
+      : untyped_array<SCOPED>(NULL) {
     mwSize matlab_dims[ndim];
     for(size_t i=0; i<ndim; ++i) matlab_dims[i] = mdims[i];
-    ptr_ = mxCreateCharArray(ndim, matlab_dims);
-    if(!ptr_) throw std::runtime_error("error creating MATLAB array");
+    untyped_array<SCOPED>::ptr_ = mxCreateCharArray(ndim, matlab_dims);
+    if(!untyped_array<SCOPED>::ptr_) 
+      throw std::runtime_error("error creating MATLAB array");
+#ifndef NDEBUG
+    if(!SCOPED) {
+      std::cerr 
+        << "WARNING: unscoped typed_array used to hold new array; "
+        << "memory leaks are likely.\n";
+    }
+#endif
   }
   // copy ctors
-  typed_array(const typed_array &r) 
-      : untyped_array(mxDuplicateArray(r.ptr_)) { 
+  template<bool B>
+  typed_array(const typed_array<char, B> &r) 
+      : untyped_array<SCOPED>(r) { 
     check_type(); 
   }
 
-  typed_array& operator=(const typed_array &a) {
-    if(ptr_ == a.ptr_) return *this;
-    ptr_ = mxDuplicateArray(a.ptr_);
-    return *this;
-  }
-  typed_array& operator=(mxArray *a) {
-    ptr_ = a;
-    return *this;
-  }
-
   void check_type() {
-    mxClassID class_id = mxGetClassID(ptr_);
+    mxClassID class_id = mxGetClassID(untyped_array<SCOPED>::ptr_);
     if(class_id != detail::cpp2matlab<char>::matlab_class) {
       std::stringstream ss;
       ss << "MATLAB array type mismatch: expected " 
@@ -272,10 +338,10 @@ public:
   }
 
   size_t num_dims() const {
-    return mxGetNumberOfDimensions(ptr_);
+    return mxGetNumberOfDimensions(untyped_array<SCOPED>::ptr_);
   }
   const mwSize* dims() const {
-    return mxGetDimensions(ptr_);
+    return mxGetDimensions(untyped_array<SCOPED>::ptr_);
   }
   std::vector<size_t> get_dims() const {
     size_t nd = num_dims();
@@ -286,15 +352,11 @@ public:
   }
 
   std::string to_string() {
-    char *c = mxArrayToString(ptr_);
+    char *c = mxArrayToString(untyped_array<SCOPED>::ptr_);
     if(!c) throw std::runtime_error("error getting MATLAB string");
     std::string to_return(c);
     mxFree(c);
     return to_return;
-  }
-
-  operator mxArray*() {
-    return ptr_;
   }
 };
 
@@ -316,14 +378,15 @@ public:
     engClose(eng_);
   }
 
-  untyped_array get(const std::string &name) {
+  mxArray* get(const std::string &name) {
     mxArray *tmp = engGetVariable(eng_, name.c_str());
     if(tmp == NULL)
       throw std::runtime_error("error getting variable from MATLAB");
-    return untyped_array(tmp);
+    return tmp;
   }
-  void put(const std::string &name, untyped_array a) {
-    if(engPutVariable(eng_, name.c_str(), a) == 1)
+  template<bool B>
+  void put(const std::string &name, untyped_array<B> &a) {
+    if(engPutVariable(eng_, name.c_str(), a.get_ptr()) == 1)
       throw std::runtime_error("error putting variable into MATLAB");
   }
   void eval(const std::string &str) {
