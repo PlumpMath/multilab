@@ -128,6 +128,24 @@ public:
     return get_type() == c;
   }
 
+  size_t num_dims() const {
+    return mxGetNumberOfDimensions(ptr_);
+  }
+  const mwSize* dims() const {
+    return mxGetDimensions(ptr_);
+  }
+  std::vector<size_t> get_dims() const {
+    size_t nd = num_dims();
+    std::vector<size_t> to_return(nd);
+    const mwSize *ml_dims = dims();
+    for(size_t i=0; i<nd; ++i) to_return[i] = ml_dims[i];
+    return to_return;
+  }
+
+  bool is_complex() const {
+    return mxIsComplex(ptr_);
+  }
+
   // assignment from any untyped_array is okay.
   template<bool B>
   untyped_array<false>& operator=(const untyped_array<B> &a) {
@@ -168,6 +186,24 @@ public:
   /** \brief MATLAB class checking */
   bool is_of_type(mxClassID c) const {
     return get_type() == c;
+  }
+
+  size_t num_dims() const {
+    return mxGetNumberOfDimensions(ptr_);
+  }
+  const mwSize* dims() const {
+    return mxGetDimensions(ptr_);
+  }
+  std::vector<size_t> get_dims() const {
+    size_t nd = num_dims();
+    std::vector<size_t> to_return(nd);
+    const mwSize *ml_dims = dims();
+    for(size_t i=0; i<nd; ++i) to_return[i] = ml_dims[i];
+    return to_return;
+  }
+
+  bool is_complex() const {
+    return mxIsComplex(ptr_);
   }
 
   untyped_array<true>& operator=(mxArray *a) {
@@ -251,24 +287,6 @@ public:
     check_type(); 
   }
 
-  size_t num_dims() const {
-    return mxGetNumberOfDimensions(untyped_array<SCOPED>::ptr_);
-  }
-  const mwSize* dims() const {
-    return mxGetDimensions(untyped_array<SCOPED>::ptr_);
-  }
-  std::vector<size_t> get_dims() const {
-    size_t nd = num_dims();
-    std::vector<size_t> to_return(nd);
-    const mwSize *ml_dims = dims();
-    for(size_t i=0; i<nd; ++i) to_return[i] = ml_dims[i];
-    return to_return;
-  }
-
-  bool is_complex() const {
-    return mxIsComplex(untyped_array<SCOPED>::ptr_);
-  }
-
   T* real_ptr() const {
     return reinterpret_cast<T*>(mxGetData(untyped_array<SCOPED>::ptr_));
   }
@@ -346,20 +364,6 @@ public:
         << detail::matlab_type_name(class_id);
       throw std::runtime_error(ss.str());
     }
-  }
-
-  size_t num_dims() const {
-    return mxGetNumberOfDimensions(untyped_array<SCOPED>::ptr_);
-  }
-  const mwSize* dims() const {
-    return mxGetDimensions(untyped_array<SCOPED>::ptr_);
-  }
-  std::vector<size_t> get_dims() const {
-    size_t nd = num_dims();
-    std::vector<size_t> to_return(nd);
-    const mwSize *ml_dims = dims();
-    for(size_t i=0; i<nd; ++i) to_return[i] = ml_dims[i];
-    return to_return;
   }
 
   std::string to_string() {

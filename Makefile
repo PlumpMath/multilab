@@ -44,3 +44,22 @@ install_headers:
 	rm -rf ${PREFIX}/include/multilab
 	mkdir ${PREFIX}/include/multilab
 	cp *.hpp ${PREFIX}/include/multilab
+
+CXX=g++
+CXXFLAGS=-g3 -Wall -Wextra -I${MATLABDIR}/extern/include \
+				 -I${PYSHARED} \
+				 -I${PYTHONDIR} \
+				 -L${MATLABDIR}/bin/${MATLABARCH} \
+				 -Wl,-rpath,${MATLABDIR}/bin/${MATLABARCH} \
+				 -fPIC -shared \
+				 ${BOOSTLIB} ${PYTHONLIB} \
+				 -lmex -leng
+
+EXT_OBJS=multilab_pyext.o
+EXT_OUT=multilab.so
+
+python: ${EXT_OUT}
+
+${EXT_OUT}: ${EXT_OBJS}
+	${CXX} ${CXXFLAGS} -o $@ $^
+
