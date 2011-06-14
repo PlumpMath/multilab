@@ -8,6 +8,7 @@
 
 #include <boost/python.hpp>
 #include <boost/python/numeric.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <numpy/ndarrayobject.h>
 
@@ -20,19 +21,25 @@ namespace matlab {
 namespace numpy = boost::python::numeric;
 namespace ml = ::multilab::matlab;
 
+class python_untyped_array {
+public:
+  python_untyped_array();
+  python_untyped_array(mxArray *a);
+  ~python_untyped_array();
+
+private:
+  boost::shared_ptr<ml::untyped_array<true> > arr_;
+};
+
 class python_engine : public engine {
 public:
   python_engine();
   python_engine(const std::string &cmd);
 
-  boost::python::object get(const std::string &name);
-  void put(const std::string &name, boost::python::object array);
+  boost::shared_ptr<python_untyped_array> get(const std::string &name);
+  void put(const std::string &name,
+      boost::shared_ptr<python_untyped_array> a);
   void eval(const std::string &str);
-
-private:
-  boost::python::object get_ndarray_(ml::untyped_array<false> arr);
-
-  void put_ndarray_(const std::string &name, numpy::array array);
 };
 
 }}

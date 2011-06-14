@@ -40,11 +40,6 @@ ifndef PYSHARED
 PYSHARED=/usr/share/pyshared
 endif
 
-install_headers:
-	rm -rf ${PREFIX}/include/multilab
-	mkdir ${PREFIX}/include/multilab
-	cp *.hpp ${PREFIX}/include/multilab
-
 CXX=g++
 CXXFLAGS=-g3 -Wall -Wextra -I${MATLABDIR}/extern/include \
 				 -I${PYSHARED} \
@@ -56,10 +51,15 @@ CXXFLAGS=-g3 -Wall -Wextra -I${MATLABDIR}/extern/include \
 				 -lmex -leng
 
 EXT_OBJS=multilab_pyext.o
-EXT_OUT=multilab.so
+EXT_OUT=multilab_private.so
 
 python: ${EXT_OUT}
 
 ${EXT_OUT}: ${EXT_OBJS}
 	${CXX} ${CXXFLAGS} -o $@ $^
+
+install_headers:
+	rm -rf ${PREFIX}/include/multilab
+	mkdir ${PREFIX}/include/multilab
+	cp *.hpp ${PREFIX}/include/multilab
 
