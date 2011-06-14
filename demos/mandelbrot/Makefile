@@ -5,7 +5,7 @@ MATLAB=/opt/matlab2008b
 
 MEX=${MATLAB}/bin/mex
 
-CXX=clang++
+CXX=g++
 CXXFLAGS=-g3 -Wall -Wextra -I${CLROOT} -I${MULTILABROOT} \
 				 -I${MATLAB}/extern/include -fPIC
 

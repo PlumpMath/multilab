@@ -63,3 +63,6 @@ install_headers:
 	mkdir ${PREFIX}/include/multilab
 	cp *.hpp ${PREFIX}/include/multilab
 
+clean:
+	${RM} ${EXT_OBJS} ${EXT_OUT}
+
