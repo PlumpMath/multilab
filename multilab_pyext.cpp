@@ -80,13 +80,15 @@ bool python_untyped_array::is_complex() const {
 boost::python::object python_untyped_array::real_part() const {
   if(arr_ == NULL)
     throw std::runtime_error("NULL python_untyped_array");
-  return vec_to_ndarray_(mxGetData(arr_->get_ptr()));
+  boost::python::object o = vec_to_ndarray_(mxGetData(arr_->get_ptr()));
+  return o;
 }
 
 boost::python::object python_untyped_array::imag_part() const {
   if(arr_ == NULL)
     throw std::runtime_error("NULL python_untyped_array");
-  return vec_to_ndarray_(mxGetImagData(arr_->get_ptr()));
+  boost::python::object o = vec_to_ndarray_(mxGetImagData(arr_->get_ptr()));
+  return o;
 }
 
 boost::python::object python_untyped_array::vec_to_ndarray_(void *v) const {
@@ -125,12 +127,9 @@ python_engine::python_engine(const std::string &cmd)
     : engine(cmd) {
 }
 
-boost::shared_ptr<python_untyped_array> 
+python_untyped_array
 python_engine::get(const std::string &name) {
-  boost::shared_ptr<python_untyped_array> to_return(new
-      python_untyped_array(
-        engine::get(name)
-        ));
+  python_untyped_array to_return(engine::get(name));
   return to_return;
 }
 
@@ -157,15 +156,32 @@ BOOST_PYTHON_MODULE(multilab_private) {
     .def(init<std::string>())
     .def("get", &ml::python_engine::get)
     .def("eval", &ml::python_engine::eval);
-  class_<ml::python_untyped_array,
-      boost::shared_ptr<ml::python_untyped_array> >
+  class_<ml::python_untyped_array>
     ("untyped_array")
-      .def(init<>())
+      .def("get_type", &ml::python_untyped_array::get_type)
       .def("num_dims", &ml::python_untyped_array::num_dims)
       .def("get_dims", &ml::python_untyped_array::get_dims)
       .def("is_complex", &ml::python_untyped_array::is_complex)
       .def("real_part", &ml::python_untyped_array::real_part)
       .def("imag_part", &ml::python_untyped_array::imag_part);
+  enum_<mxClassID>("mx_class_id")
+      .value("unknown_class", mxUNKNOWN_CLASS)
+      .value("cell_class", mxCELL_CLASS)
+      .value("struct_class", mxSTRUCT_CLASS)
+      .value("logical_class", mxLOGICAL_CLASS)
+      .value("char_class", mxCHAR_CLASS)
+      .value("void_class", mxVOID_CLASS)
+      .value("double_class", mxDOUBLE_CLASS)
+      .value("single_class", mxSINGLE_CLASS)
+      .value("int8_class", mxINT8_CLASS)
+      .value("uint8_class", mxUINT8_CLASS)
+      .value("int16_class", mxINT16_CLASS)
+      .value("uint16_class", mxUINT16_CLASS)
+      .value("int32_class", mxINT32_CLASS)
+      .value("uint32_class", mxUINT32_CLASS)
+      .value("int64_class", mxINT64_CLASS)
+      .value("uint64_class", mxUINT64_CLASS)
+      .value("function_class", mxFUNCTION_CLASS);
 }
 
 // eof //

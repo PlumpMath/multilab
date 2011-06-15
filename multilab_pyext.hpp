@@ -46,7 +46,7 @@ public:
   python_engine();
   python_engine(const std::string &cmd);
 
-  boost::shared_ptr<python_untyped_array> get(const std::string &name);
+  python_untyped_array get(const std::string &name);
   void put(const std::string &name,
       boost::shared_ptr<python_untyped_array> a);
   void eval(const std::string &str);
