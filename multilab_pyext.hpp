@@ -26,8 +26,18 @@ public:
   python_untyped_array();
   python_untyped_array(mxArray *a);
   ~python_untyped_array();
+  
+  mxClassID get_type() const;
+  size_t num_dims() const;
+  boost::python::tuple get_dims() const;
+  bool is_complex() const;
+
+  boost::python::object real_part() const;
+  boost::python::object imag_part() const;
 
 private:
+  boost::python::object vec_to_ndarray_(void *v) const;
+
   boost::shared_ptr<ml::untyped_array<true> > arr_;
 };
 

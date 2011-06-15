@@ -48,6 +48,71 @@ python_untyped_array::python_untyped_array(mxArray *a) {
 python_untyped_array::~python_untyped_array() {
 }
 
+mxClassID python_untyped_array::get_type() const {
+  if(arr_ == NULL) 
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->get_type();
+}
+
+size_t python_untyped_array::num_dims() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->num_dims();
+}
+
+boost::python::tuple python_untyped_array::get_dims() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  const std::vector<size_t> &dims = arr_->get_dims();
+  boost::python::list accum;
+  for(unsigned i=0; i<dims.size(); ++i)
+    accum.append(dims[i]);
+  boost::python::tuple to_return(accum);
+  return to_return;
+}
+
+bool python_untyped_array::is_complex() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->is_complex();
+}
+
+boost::python::object python_untyped_array::real_part() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return vec_to_ndarray_(mxGetData(arr_->get_ptr()));
+}
+
+boost::python::object python_untyped_array::imag_part() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return vec_to_ndarray_(mxGetImagData(arr_->get_ptr()));
+}
+
+boost::python::object python_untyped_array::vec_to_ndarray_(void *v) const {
+  const std::vector<size_t> &dims = arr_->get_dims();
+  std::vector<long> npy_dims(dims.size());
+  for(unsigned i=0; i<dims.size(); ++i) npy_dims[i] = dims[i];
+
+  int npy_type = mx_class_to_numpy_type(arr_->get_ptr());
+  if(npy_type == NPY_USERDEF)
+    throw std::runtime_error("attempted to get numerics from non-numeric "
+        "array");
+
+  object to_return;
+  to_return = object(handle<>(PyArray_NewFromDescr(
+          &PyArray_Type,
+          PyArray_DescrFromType( npy_type ),
+          dims.size(),
+          &npy_dims[0],
+          NULL,
+          v,
+          NPY_F_CONTIGUOUS | NPY_ENSURECOPY,
+          NULL ) ) );
+
+  return to_return;
+}
+
 //
 // python_engine implementation
 //
@@ -95,7 +160,12 @@ BOOST_PYTHON_MODULE(multilab_private) {
   class_<ml::python_untyped_array,
       boost::shared_ptr<ml::python_untyped_array> >
     ("untyped_array")
-      .def(init<>());
+      .def(init<>())
+      .def("num_dims", &ml::python_untyped_array::num_dims)
+      .def("get_dims", &ml::python_untyped_array::get_dims)
+      .def("is_complex", &ml::python_untyped_array::is_complex)
+      .def("real_part", &ml::python_untyped_array::real_part)
+      .def("imag_part", &ml::python_untyped_array::imag_part);
 }
 
 // eof //
