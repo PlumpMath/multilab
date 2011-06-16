@@ -88,6 +88,34 @@ namespace detail {
       default: throw std::runtime_error("unhandled MATLAB type");
     }
   }
+
+  static size_t matlab_class_size(mxClassID id) {
+    switch(id) {
+      case mxCHAR_CLASS: return
+                         sizeof(matlab2cpp<mxCHAR_CLASS>::cpp_type);
+      case mxDOUBLE_CLASS: return
+                         sizeof(matlab2cpp<mxDOUBLE_CLASS>::cpp_type);
+      case mxSINGLE_CLASS: return
+                         sizeof(matlab2cpp<mxSINGLE_CLASS>::cpp_type);
+      case mxINT8_CLASS: return
+                         sizeof(matlab2cpp<mxINT8_CLASS>::cpp_type);
+      case mxUINT8_CLASS: return
+                         sizeof(matlab2cpp<mxUINT8_CLASS>::cpp_type);
+      case mxINT16_CLASS: return
+                         sizeof(matlab2cpp<mxINT16_CLASS>::cpp_type);
+      case mxUINT16_CLASS: return
+                         sizeof(matlab2cpp<mxUINT16_CLASS>::cpp_type);
+      case mxINT32_CLASS: return 
+                         sizeof(matlab2cpp<mxINT32_CLASS>::cpp_type);
+      case mxUINT32_CLASS: return
+                         sizeof(matlab2cpp<mxUINT32_CLASS>::cpp_type);
+      case mxINT64_CLASS: return
+                         sizeof(matlab2cpp<mxINT64_CLASS>::cpp_type);
+      case mxUINT64_CLASS: return
+                         sizeof(matlab2cpp<mxUINT64_CLASS>::cpp_type);
+      default: throw std::runtime_error("unhandled MATLAB type");
+    }
+  }
 }
 
 /** \brief untyped array, essentially a wrapper for a raw mxArray* */

@@ -40,7 +40,6 @@ class engine(object):
     wrapper = self.engine_.get(varname)
     handler = self.convert_mapping_[wrapper.get_type()]
     if handler is not None:
-      print "converting from MATLAB type ", wrapper.get_type()
       return handler(wrapper)
     else:
       raise TypeError("cannot convert from MATLAB type ",\
@@ -48,7 +47,7 @@ class engine(object):
 
   def get_numerical_vec_(self, wrapper):
     if wrapper.is_complex():
-      return wrapper.real_part() + wrapper.imag_part()*1j
+      return wrapper.real_part() + (wrapper.imag_part() * 1j)
     else:
       return wrapper.real_part()
 

@@ -1,5 +1,7 @@
 #include "multilab_pyext.hpp"
 
+#include <cstring>
+
 using namespace boost::python;
 namespace ml = ::multilab::matlab;
 namespace numpy = boost::python::numeric;
@@ -94,23 +96,31 @@ boost::python::object python_untyped_array::imag_part() const {
 boost::python::object python_untyped_array::vec_to_ndarray_(void *v) const {
   const std::vector<size_t> &dims = arr_->get_dims();
   std::vector<long> npy_dims(dims.size());
-  for(unsigned i=0; i<dims.size(); ++i) npy_dims[i] = dims[i];
+  size_t num_elems = 1;
+  for(unsigned i=0; i<dims.size(); ++i) {
+    npy_dims[i] = dims[i];
+    num_elems *= dims[i];
+  }
 
   int npy_type = mx_class_to_numpy_type(arr_->get_ptr());
   if(npy_type == NPY_USERDEF)
     throw std::runtime_error("attempted to get numerics from non-numeric "
         "array");
 
-  object to_return;
-  to_return = object(handle<>(PyArray_NewFromDescr(
-          &PyArray_Type,
-          PyArray_DescrFromType( npy_type ),
-          dims.size(),
-          &npy_dims[0],
-          NULL,
-          v,
-          NPY_F_CONTIGUOUS | NPY_ENSURECOPY,
-          NULL ) ) );
+  handle<> h(PyArray_NewFromDescr(
+      &PyArray_Type,
+      PyArray_DescrFromType( npy_type ),
+      dims.size(),
+      &npy_dims[0],
+      NULL,
+      NULL, /* well, i'll be damned.  i was using this parameter wrong. */
+      NPY_F_CONTIGUOUS | NPY_ENSURECOPY,
+      NULL ));
+  object to_return(h);
+  PyArrayObject *a = reinterpret_cast<PyArrayObject*>(to_return.ptr());
+  // copy data into place
+  memcpy(PyArray_DATA(a), v, 
+      detail::matlab_class_size(mxGetClassID(arr_->get_ptr())) * num_elems);
 
   return to_return;
 }
