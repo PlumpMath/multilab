@@ -174,6 +174,29 @@ public:
     return mxIsComplex(ptr_);
   }
 
+  // struct stuff
+  int num_fields() const {
+    return mxGetNumberOfFields(ptr_);
+  }
+  std::string field_name(int i) const {
+    const char *c = mxGetFieldNameByNumber(ptr_, i);
+    if(c == NULL)
+      throw std::runtime_error("couldn't get field name");
+    return std::string(c);
+  }
+  int field_number(std::string s) const {
+    int ret = mxGetFieldNumber(ptr_, s.c_str());
+    if(ret == -1) 
+      throw std::runtime_error("nonexistant field");
+    return ret;
+  }
+  mxArray* get_field(int i, int field) const {
+    mxArray *m = mxGetFieldByNumber(ptr_, i, field);
+    if(m == NULL)
+      throw std::runtime_error("error getting field value");
+    return m;
+  }
+
   // assignment from any untyped_array is okay.
   template<bool B>
   untyped_array<false>& operator=(const untyped_array<B> &a) {
@@ -232,6 +255,29 @@ public:
 
   bool is_complex() const {
     return mxIsComplex(ptr_);
+  }
+
+  // struct stuff
+  int num_fields() const {
+    return mxGetNumberOfFields(ptr_);
+  }
+  std::string field_name(int i) const {
+    const char *c = mxGetFieldNameByNumber(ptr_, i);
+    if(c == NULL)
+      throw std::runtime_error("couldn't get field name");
+    return std::string(c);
+  }
+  int field_number(std::string s) const {
+    int ret = mxGetFieldNumber(ptr_, s.c_str());
+    if(ret == -1) 
+      throw std::runtime_error("nonexistant field");
+    return ret;
+  }
+  mxArray* get_field(int i, int field) const {
+    mxArray *m = mxGetFieldByNumber(ptr_, i, field);
+    if(m == NULL)
+      throw std::runtime_error("error getting field value");
+    return m;
   }
 
   untyped_array<true>& operator=(mxArray *a) {

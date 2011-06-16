@@ -21,7 +21,8 @@ class engine(object):
         multilab_private.mx_class_id.logical_class: None,
         multilab_private.mx_class_id.single_class: \
             self.get_numerical_vec_,
-        multilab_private.mx_class_id.struct_class: None,
+        multilab_private.mx_class_id.struct_class: \
+            self.get_struct_,
         multilab_private.mx_class_id.uint8_class: \
             self.get_numerical_vec_,
         multilab_private.mx_class_id.uint16_class: \
@@ -44,6 +45,9 @@ class engine(object):
     else:
       raise TypeError("cannot convert from MATLAB type ",\
           wrapper.get_type())
+
+  def get_struct_(self, wrapper):
+    pass
 
   def get_numerical_vec_(self, wrapper):
     if wrapper.is_complex():
