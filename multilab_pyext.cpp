@@ -42,12 +42,20 @@ static mxClassID numpy_type_to_mx_class(numpy::array array,
 python_untyped_array::python_untyped_array() {
 }
 
-python_untyped_array::python_untyped_array(mxArray *a) {
+python_untyped_array::python_untyped_array(mxArray *a, bool managed) 
+    : managed_(managed) {
   arr_ = boost::shared_ptr<ml::untyped_array<true> >(
       new ml::untyped_array<true>(a) );
 }
 
 python_untyped_array::~python_untyped_array() {
+  if(!managed_) {
+    // shocking hackery to outsmart shared_ptr.  i've secured a special
+    // spot in hell for this one.
+    char tmp[sizeof(boost::shared_ptr<ml::untyped_array<true> >)];
+    boost::shared_ptr<ml::untyped_array<true> > *tmp2 =
+      new(tmp) boost::shared_ptr<ml::untyped_array<true> >(arr_);
+  }
 }
 
 mxClassID python_untyped_array::get_type() const {
@@ -91,6 +99,33 @@ boost::python::object python_untyped_array::imag_part() const {
     throw std::runtime_error("NULL python_untyped_array");
   boost::python::object o = vec_to_ndarray_(mxGetImagData(arr_->get_ptr()));
   return o;
+}
+
+int python_untyped_array::num_fields() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->num_fields();
+}
+
+std::string python_untyped_array::field_name(int i) const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->field_name(i);
+}
+
+int python_untyped_array::field_number(const std::string &s) const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->field_number(s);
+}
+
+python_untyped_array python_untyped_array::get_field(int i, int field)
+    const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  mxArray *m = arr_->get_field(i, field);
+  python_untyped_array to_return(m, false);
+  return to_return;
 }
 
 boost::python::object python_untyped_array::vec_to_ndarray_(void *v) const {
@@ -171,9 +206,15 @@ BOOST_PYTHON_MODULE(multilab_private) {
       .def("get_type", &ml::python_untyped_array::get_type)
       .def("num_dims", &ml::python_untyped_array::num_dims)
       .def("get_dims", &ml::python_untyped_array::get_dims)
+
       .def("is_complex", &ml::python_untyped_array::is_complex)
       .def("real_part", &ml::python_untyped_array::real_part)
-      .def("imag_part", &ml::python_untyped_array::imag_part);
+      .def("imag_part", &ml::python_untyped_array::imag_part)
+      
+      .def("num_fields", &ml::python_untyped_array::num_fields)
+      .def("field_name", &ml::python_untyped_array::field_name)
+      .def("field_number", &ml::python_untyped_array::field_number)
+      .def("get_field", &ml::python_untyped_array::get_field);
   enum_<mxClassID>("mx_class_id")
       .value("unknown_class", mxUNKNOWN_CLASS)
       .value("cell_class", mxCELL_CLASS)

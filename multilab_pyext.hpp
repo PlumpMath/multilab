@@ -24,7 +24,7 @@ namespace ml = ::multilab::matlab;
 class python_untyped_array {
 public:
   python_untyped_array();
-  python_untyped_array(mxArray *a);
+  python_untyped_array(mxArray *a, bool managed=true);
   ~python_untyped_array();
   
   mxClassID get_type() const;
@@ -35,9 +35,16 @@ public:
   boost::python::object real_part() const;
   boost::python::object imag_part() const;
 
+  // struct stuff
+  int num_fields() const;
+  std::string field_name(int i) const;
+  int field_number(const std::string &s) const;
+  python_untyped_array get_field(int i, int field) const;
+
 private:
   boost::python::object vec_to_ndarray_(void *v) const;
 
+  bool managed_;
   boost::shared_ptr<ml::untyped_array<true> > arr_;
 };
 

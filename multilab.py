@@ -39,6 +39,9 @@ class engine(object):
 
   def get(self, varname):
     wrapper = self.engine_.get(varname)
+    return self.pythonize_wrapper_(wrapper)
+
+  def pythonize_wrapper_(self, wrapper):
     handler = self.convert_mapping_[wrapper.get_type()]
     if handler is not None:
       return handler(wrapper)
@@ -47,7 +50,16 @@ class engine(object):
           wrapper.get_type())
 
   def get_struct_(self, wrapper):
-    pass
+    size = reduce(lambda x,y: x*y, wrapper.get_dims())
+    if size > 1:
+      raise TypeError("sorry, no support for struct arrays now")
+    to_ret = {}
+    num_fields = wrapper.num_fields()
+    for fi in range(num_fields):
+      field_wrapper = wrapper.get_field(0, fi)
+      to_ret[wrapper.field_name(fi)] = \
+          self.pythonize_wrapper_(field_wrapper)
+    return to_ret
 
   def get_numerical_vec_(self, wrapper):
     if wrapper.is_complex():

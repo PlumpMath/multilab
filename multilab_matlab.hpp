@@ -184,7 +184,7 @@ public:
       throw std::runtime_error("couldn't get field name");
     return std::string(c);
   }
-  int field_number(std::string s) const {
+  int field_number(const std::string &s) const {
     int ret = mxGetFieldNumber(ptr_, s.c_str());
     if(ret == -1) 
       throw std::runtime_error("nonexistant field");
