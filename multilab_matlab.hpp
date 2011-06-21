@@ -456,12 +456,14 @@ public:
   engine_()
       : eng_(engOpen("\0")) { 
     if(eng_ == NULL) 
-      throw std::runtime_error("error starting MATLAB engine");
+      throw std::runtime_error("error starting MATLAB engine; have you "
+          "installed csh to /usr/bin?");
   }
   engine_(const std::string &command)
       : eng_(engOpen(command.c_str())) {
     if(eng_ == NULL)
-      throw std::runtime_error("error starting MATLAB engine");
+      throw std::runtime_error("error starting MATLAB engine; have you "
+          "installed csh to /usr/bin?");
   }
   ~engine_() {
     engClose(eng_);
