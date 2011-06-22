@@ -32,8 +32,15 @@ public:
   boost::python::tuple get_dims() const;
   bool is_complex() const;
 
+  // numerical stuff
   boost::python::object real_part() const;
   boost::python::object imag_part() const;
+
+  // string stuff
+  boost::python::object as_string() const;
+
+  // logical stuff
+  boost::python::object as_logical() const;
 
   // struct stuff
   int num_fields() const;

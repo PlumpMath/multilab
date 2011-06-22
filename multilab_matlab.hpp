@@ -55,7 +55,7 @@ namespace detail {
   // TIE_MATLAB_CPP(mxCELL_CLASS, ?)
   // TIE_MATLAB_CPP(mxSTRUCT_CLASS, ?)
   // TIE_MATLAB_CPP(mxFUNCTION_CLASS, ?)
-  // TIE_MATLAB_CPP(mxLOGICAL_CLASS, bool);
+  TIE_MATLAB_CPP(mxLOGICAL_CLASS, bool, "bool");
   TIE_MATLAB_CPP(mxCHAR_CLASS, char, "char");
   TIE_MATLAB_CPP(mxDOUBLE_CLASS, double, "double");
   TIE_MATLAB_CPP(mxSINGLE_CLASS, float, "float");
@@ -85,6 +85,7 @@ namespace detail {
       case mxUINT32_CLASS: return "uint32";
       case mxINT64_CLASS: return "int64";
       case mxUINT64_CLASS: return "uint64";
+      case mxLOGICAL_CLASS: return "bool";
       default: throw std::runtime_error("unhandled MATLAB type");
     }
   }
@@ -113,6 +114,8 @@ namespace detail {
                          sizeof(matlab2cpp<mxINT64_CLASS>::cpp_type);
       case mxUINT64_CLASS: return
                          sizeof(matlab2cpp<mxUINT64_CLASS>::cpp_type);
+      case mxLOGICAL_CLASS: return
+                          sizeof(matlab2cpp<mxLOGICAL_CLASS>::cpp_type);
       default: throw std::runtime_error("unhandled MATLAB type");
     }
   }
@@ -448,6 +451,71 @@ public:
     return to_return;
   }
 };
+
+template<bool SCOPED>
+class typed_array<bool, SCOPED> : public untyped_array<SCOPED> {
+public:
+  typed_array(mxArray *a)
+      : untyped_array<SCOPED>(a) {
+    check_type();
+  }
+  template<bool B>
+  typed_array(const untyped_array<B> &a) 
+      : untyped_array<SCOPED>(a) {
+    check_type();
+  }
+  typed_array(size_t ndim, size_t *mdims) 
+      : untyped_array<SCOPED>(NULL) {
+    mwSize matlab_dims[ndim];
+    for(size_t i=0; i<ndim; ++i) matlab_dims[i] = mdims[i];
+    untyped_array<SCOPED>::ptr_ = mxCreateLogicalArray(ndim, matlab_dims);
+    if(!untyped_array<SCOPED>::ptr_) 
+      throw std::runtime_error("error creating MATLAB array");
+#ifndef NDEBUG
+    if(!SCOPED) {
+      std::cerr 
+        << "WARNING: unscoped typed_array used to hold new array; "
+        << "memory leaks are likely.\n";
+    }
+#endif
+  }
+  // copy ctors
+  template<bool B>
+  typed_array(const typed_array<char, B> &r) 
+      : untyped_array<SCOPED>(r) { 
+    check_type(); 
+  }
+
+  void check_type() {
+    mxClassID class_id = mxGetClassID(untyped_array<SCOPED>::ptr_);
+    if(class_id != detail::cpp2matlab<bool>::matlab_class) {
+      std::stringstream ss;
+      ss << "MATLAB array type mismatch: expected " 
+        << detail::cpp_type_name<bool>() << " got " 
+        << detail::matlab_type_name(class_id);
+      throw std::runtime_error(ss.str());
+    }
+  }
+
+  std::string to_string() {
+    char *c = mxArrayToString(untyped_array<SCOPED>::ptr_);
+    if(!c) throw std::runtime_error("error getting MATLAB string");
+    std::string to_return(c);
+    mxFree(c);
+    return to_return;
+  }
+
+  // NOTE: this might not work on PPC macs, but who uses those these
+  // days?  hopefully we'd get a compiler warning anyways
+  bool* logical_ptr() {
+    bool *b = mxGetLogicals(untyped_array<SCOPED>::ptr_);
+    if(b == NULL) {
+      throw std::runtime_error("error getting logical array data");
+    }
+    return b;
+  }
+};
+
 
 /** \brief instance of a MATLAB engine for embedding in python (or c++) */
 template<int UNUSED=0>

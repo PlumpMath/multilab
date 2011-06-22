@@ -25,6 +25,7 @@ static int mx_class_to_numpy_type(mxArray *array) {
     case mxUINT32_CLASS: return NPY_UINT;
     case mxINT64_CLASS: return NPY_ULONGLONG;
     case mxUINT64_CLASS: return NPY_LONGLONG;
+    case mxLOGICAL_CLASS: return NPY_BOOL;
     default: return NPY_USERDEF;
   }
 }
@@ -99,6 +100,22 @@ boost::python::object python_untyped_array::imag_part() const {
     throw std::runtime_error("NULL python_untyped_array");
   boost::python::object o = vec_to_ndarray_(mxGetImagData(arr_->get_ptr()));
   return o;
+}
+
+boost::python::object python_untyped_array::as_string() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  ml::typed_array<char, false> c(*arr_);
+  const std::string &s = c.to_string();
+  boost::python::object o(s);
+  return o;
+}
+
+boost::python::object python_untyped_array::as_logical() const {
+  if(arr_ == NULL) 
+    throw std::runtime_error("NULL python_untyped_array");
+  ml::typed_array<bool, false> b(*arr_);
+  return vec_to_ndarray_(b.logical_ptr());
 }
 
 int python_untyped_array::num_fields() const {
@@ -210,6 +227,10 @@ BOOST_PYTHON_MODULE(multilab_private) {
       .def("is_complex", &ml::python_untyped_array::is_complex)
       .def("real_part", &ml::python_untyped_array::real_part)
       .def("imag_part", &ml::python_untyped_array::imag_part)
+
+      .def("as_string", &ml::python_untyped_array::as_string)
+
+      .def("as_logical", &ml::python_untyped_array::as_logical)
       
       .def("num_fields", &ml::python_untyped_array::num_fields)
       .def("field_name", &ml::python_untyped_array::field_name)
