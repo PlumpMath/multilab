@@ -118,16 +118,12 @@ class engine(object):
     rows = wrapper.row_coords()
     col_counts = wrapper.col_index_counts()
 
-    print "rows", rows
-    print "col_counts", col_counts
-
     matrix = dok_matrix(wrapper.get_dims(), dtype=vec.dtype)
     rid = 0
     for cid in range(len(col_counts)):
       while rid < col_counts[cid]:
         coord = (rows[rid], cid-1)
         val = vec[rid]
-        print coord, "=", val
         matrix[coord] = val
         rid += 1
 
