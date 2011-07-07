@@ -32,6 +32,11 @@ public:
   boost::python::tuple get_dims() const;
   bool is_complex() const;
 
+  // sparse stuff
+  bool is_sparse() const;
+  boost::python::object row_coords() const;
+  boost::python::object col_index_counts() const;
+
   // numerical stuff
   boost::python::object real_part() const;
   boost::python::object imag_part() const;
@@ -50,6 +55,7 @@ public:
 
 private:
   boost::python::object vec_to_ndarray_(void *v) const;
+  boost::python::object indices_to_ndarray_(void *v, long size) const;
 
   bool managed_;
   boost::shared_ptr<ml::untyped_array<true> > arr_;

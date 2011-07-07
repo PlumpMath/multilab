@@ -177,6 +177,19 @@ public:
     return mxIsComplex(ptr_);
   }
 
+  bool is_sparse() const {
+    return mxIsSparse(ptr_);
+  }
+  mwIndex* column_indices() const {
+    return mxGetJc(ptr_);
+  }
+  mwIndex* row_indices() const {
+    return mxGetIr(ptr_);
+  }
+  mwSize num_sparse_indices() const {
+    return mxGetNzmax(ptr_);
+  }
+
   // struct stuff
   int num_fields() const {
     return mxGetNumberOfFields(ptr_);
@@ -258,6 +271,19 @@ public:
 
   bool is_complex() const {
     return mxIsComplex(ptr_);
+  }
+
+  bool is_sparse() const {
+    return mxIsSparse(ptr_);
+  }
+  mwIndex* column_index_counts() const {
+    return mxGetJc(ptr_);
+  }
+  mwIndex* row_indices() const {
+    return mxGetIr(ptr_);
+  }
+  mwSize num_sparse_indices() const {
+    return mxGetNzmax(ptr_);
   }
 
   // struct stuff

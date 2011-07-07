@@ -12,32 +12,32 @@ class engine(object):
     self.convert_mapping_ = { \
         multilab_private.mx_class_id.cell_class: None,
         multilab_private.mx_class_id.char_class: \
-            self.get_string_vec_,
+            self.__get_string_vec,
         multilab_private.mx_class_id.double_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.function_class: None,
         multilab_private.mx_class_id.int8_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.int16_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.int32_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.int64_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.logical_class: \
-            self.get_logical_vec_,
+            self.__get_logical_vec,
         multilab_private.mx_class_id.single_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.struct_class: \
-            self.get_struct_,
+            self.__get_struct,
         multilab_private.mx_class_id.uint8_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.uint16_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.uint32_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.uint64_class: \
-            self.get_numerical_vec_,
+            self.__get_numerical_vec,
         multilab_private.mx_class_id.void_class: None
         }
     self.handles_ = {}
@@ -69,7 +69,7 @@ class engine(object):
       raise TypeError("cannot convert from MATLAB type ",\
           wrapper.get_type())
 
-  def unwrap_coords_(self, index, size):
+  def __unwrap_coords(self, index, size):
     coord_list = []
     modulus = 1
     for i in range(len(size)):
@@ -77,7 +77,7 @@ class engine(object):
       coord_list.append( index % modulus )
     return tuple(coord_list)
 
-  def get_struct_(self, wrapper):
+  def __get_struct(self, wrapper):
     dims = wrapper.get_dims()
     size = reduce(lambda x,y: x*y, dims)
     num_fields = wrapper.num_fields()
@@ -90,7 +90,7 @@ class engine(object):
           field_wrapper = wrapper.get_field(idx, fi)
           stct[wrapper.field_name(fi)] = \
               self.pythonize_wrapper_(field_wrapper)
-        idx_coords = self.unwrap_coords_(idx, dims)
+        idx_coords = self.__unwrap_coords(idx, dims)
         to_ret[idx_coords] = stct
       return to_ret
     else:
@@ -102,15 +102,40 @@ class engine(object):
             self.pythonize_wrapper_(field_wrapper)
       return to_ret
 
-  def get_numerical_vec_(self, wrapper):
+  def __get_numerical_vec(self, wrapper):
+    vec = None
     if wrapper.is_complex():
-      return wrapper.real_part() + (wrapper.imag_part() * 1j)
+      vec = wrapper.real_part() + (wrapper.imag_part() * 1j)
     else:
-      return wrapper.real_part()
+      vec = wrapper.real_part()
+    if wrapper.is_sparse():
+      return self.__sparsify(wrapper, vec.T.flatten())
+    else:
+      return vec
 
-  def get_string_vec_(self, wrapper):
+  def __sparsify(self, wrapper, vec):
+    from scipy.sparse import dok_matrix 
+    rows = wrapper.row_coords()
+    col_counts = wrapper.col_index_counts()
+
+    print "rows", rows
+    print "col_counts", col_counts
+
+    matrix = dok_matrix(wrapper.get_dims(), dtype=vec.dtype)
+    rid = 0
+    for cid in range(len(col_counts)):
+      while rid < col_counts[cid]:
+        coord = (rows[rid], cid-1)
+        val = vec[rid]
+        print coord, "=", val
+        matrix[coord] = val
+        rid += 1
+
+    return matrix
+
+  def __get_string_vec(self, wrapper):
     return wrapper.as_string()
 
-  def get_logical_vec_(self, wrapper):
+  def __get_logical_vec(self, wrapper):
     return wrapper.as_logical()
 

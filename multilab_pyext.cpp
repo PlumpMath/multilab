@@ -12,8 +12,7 @@ namespace matlab {
 //
 // helpers
 //
-static int mx_class_to_numpy_type(mxArray *array) {
-  mxClassID class_id = mxGetClassID(array);
+static int mx_class_to_numpy_type(mxClassID class_id) {
   switch(class_id) {
     case mxDOUBLE_CLASS: return NPY_DOUBLE;
     case mxSINGLE_CLASS: return NPY_FLOAT;
@@ -88,6 +87,29 @@ bool python_untyped_array::is_complex() const {
   return arr_->is_complex();
 }
 
+bool python_untyped_array::is_sparse() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  return arr_->is_sparse();
+}
+
+boost::python::object python_untyped_array::row_coords() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  boost::python::object o = indices_to_ndarray_(arr_->row_indices(), 
+      arr_->num_sparse_indices());
+  return o;
+}
+
+boost::python::object python_untyped_array::col_index_counts() const {
+  if(arr_ == NULL)
+    throw std::runtime_error("NULL python_untyped_array");
+  boost::python::object o =
+    indices_to_ndarray_(arr_->column_index_counts(),
+        arr_->dims()[1]+1);
+  return o;
+}
+
 boost::python::object python_untyped_array::real_part() const {
   if(arr_ == NULL)
     throw std::runtime_error("NULL python_untyped_array");
@@ -154,7 +176,7 @@ boost::python::object python_untyped_array::vec_to_ndarray_(void *v) const {
     num_elems *= dims[i];
   }
 
-  int npy_type = mx_class_to_numpy_type(arr_->get_ptr());
+  int npy_type = mx_class_to_numpy_type(arr_->get_type());
   if(npy_type == NPY_USERDEF)
     throw std::runtime_error("attempted to get numerics from non-numeric "
         "array");
@@ -173,6 +195,30 @@ boost::python::object python_untyped_array::vec_to_ndarray_(void *v) const {
   // copy data into place
   memcpy(PyArray_DATA(a), v, 
       detail::matlab_class_size(mxGetClassID(arr_->get_ptr())) * num_elems);
+
+  return to_return;
+}
+
+boost::python::object 
+python_untyped_array::indices_to_ndarray_(void *v, long dims) const {
+  int npy_type =
+    mx_class_to_numpy_type(detail::cpp2matlab<mwIndex>::matlab_class);
+
+  handle<> h(PyArray_NewFromDescr(
+        &PyArray_Type,
+        PyArray_DescrFromType( npy_type ),
+        1,
+        &dims,
+        NULL,
+        NULL,
+        NPY_F_CONTIGUOUS | NPY_ENSURECOPY,
+        NULL ));
+  object to_return(h);
+
+  PyArrayObject *a = reinterpret_cast<PyArrayObject*>(to_return.ptr());
+  memcpy(PyArray_DATA(a), v,
+      detail::matlab_class_size(mxGetClassID(arr_->get_ptr())) *
+      dims);
 
   return to_return;
 }
@@ -225,6 +271,11 @@ BOOST_PYTHON_MODULE(multilab_private) {
       .def("get_dims", &ml::python_untyped_array::get_dims)
 
       .def("is_complex", &ml::python_untyped_array::is_complex)
+
+      .def("is_sparse", &ml::python_untyped_array::is_sparse)
+      .def("row_coords", &ml::python_untyped_array::row_coords)
+      .def("col_index_counts", &ml::python_untyped_array::col_index_counts)
+
       .def("real_part", &ml::python_untyped_array::real_part)
       .def("imag_part", &ml::python_untyped_array::imag_part)
 
