@@ -144,7 +144,7 @@ public:
       : ptr_(a.get_ptr()) { }
   virtual ~untyped_array() {
     // do not delete
-    std::cerr << "not deleting untyped_array" << std::endl;
+    //std::cerr << "not deleting untyped_array" << std::endl;
   }
 
   /** \brief MATLAB class checking */
@@ -240,7 +240,7 @@ public:
   virtual ~untyped_array() {
     if(ptr_) {
       mxDestroyArray(ptr_);
-      std::cerr << "deleting untyped_array" << std::endl;
+      //std::cerr << "deleting untyped_array" << std::endl;
     }
   }
 
@@ -562,7 +562,7 @@ public:
           "installed csh to /usr/bin?");
   }
   virtual ~engine_() {
-    std::cerr << "closing engine" << std::endl;
+    //std::cerr << "closing engine" << std::endl;
     engClose(eng_);
   }
 
