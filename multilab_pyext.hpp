@@ -25,7 +25,7 @@ class python_untyped_array {
 public:
   python_untyped_array();
   python_untyped_array(mxArray *a, bool managed=true);
-  ~python_untyped_array();
+  virtual ~python_untyped_array();
   
   mxClassID get_type() const;
   size_t num_dims() const;
@@ -65,6 +65,7 @@ class python_engine : public engine {
 public:
   python_engine();
   python_engine(const std::string &cmd);
+  virtual ~python_engine() { }
 
   python_untyped_array get(const std::string &name);
   void put(const std::string &name,

@@ -1,11 +1,6 @@
 import multilab_private
 import numpy
 
-class matlab_handle(object):
-  def __init__(self, engine_obj, obj_name):
-    self.engine_ = engine_obj
-    self.name_ = obj_name
-
 class engine(object):
   def __init__(self, cmd = ""):
     self.engine_ = multilab_private.engine(cmd)
@@ -40,19 +35,6 @@ class engine(object):
             self.__get_numerical_vec,
         multilab_private.mx_class_id.void_class: None
         }
-    self.handles_ = {}
-
-  def read_workspace(self):
-    self.engine_.eval("multilab_workspace = whos")
-    ml_workspace_objs = self.get("multilab_workspace")
-    self.handles_.clear()
-
-  def make_handle(self, obj_name):
-    if obj_name in self.handles_.keys():
-      return self.handles_.keys[obj_name]
-    new_handle = matlab_handle(self, obj_name)
-    self.handles_[obj_name] = new_handle
-    return new_handle
 
   def eval(self, cmd):
     self.engine_.eval(cmd)
@@ -114,20 +96,10 @@ class engine(object):
       return vec
 
   def __sparsify(self, wrapper, vec):
-    from scipy.sparse import dok_matrix 
-    rows = wrapper.row_coords()
-    col_counts = wrapper.col_index_counts()
-
-    matrix = dok_matrix(wrapper.get_dims(), dtype=vec.dtype)
-    rid = 0
-    for cid in range(len(col_counts)):
-      while rid < col_counts[cid]:
-        coord = (rows[rid], cid-1)
-        val = vec[rid]
-        matrix[coord] = val
-        rid += 1
-
-    return matrix
+    from scipy.sparse import csc_matrix
+    row_ind = wrapper.row_coords()
+    col_ptr = wrapper.col_index_counts()
+    return csc_matrix( (vec, row_ind, col_ptr), wrapper.get_dims() )
 
   def __get_string_vec(self, wrapper):
     return wrapper.as_string()
