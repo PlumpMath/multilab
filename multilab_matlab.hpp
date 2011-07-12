@@ -577,6 +577,10 @@ public:
     if(engPutVariable(eng_, name.c_str(), a.get_ptr()) == 1)
       throw std::runtime_error("error putting variable into MATLAB");
   }
+  void put(const std::string &name, mxArray *a) {
+    if(engPutVariable(eng_, name.c_str(), a) == 1)
+      throw std::runtime_error("error putting variable into MATLAB");
+  }
   void eval(const std::string &str) {
     if(engEvalString(eng_, str.c_str()) == 1) {
       throw std::runtime_error("error evaluating MATLAB command");

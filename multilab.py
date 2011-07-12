@@ -43,6 +43,11 @@ class engine(object):
     wrapper = self.engine_.get(varname)
     return self.pythonize_wrapper_(wrapper)
 
+  def set_dense_real(self, varname, val):
+    matlab_ordered = numpy.array(val, dtype=val.dtype, order='F')
+    self.engine_.set_dense_vector_real(varname, matlab_ordered.shape,\
+        matlab_ordered)
+
   def pythonize_wrapper_(self, wrapper):
     handler = self.convert_mapping_[wrapper.get_type()]
     if handler is not None:

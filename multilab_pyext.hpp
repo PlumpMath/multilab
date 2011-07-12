@@ -68,8 +68,14 @@ public:
   virtual ~python_engine() { }
 
   python_untyped_array get(const std::string &name);
-  void put(const std::string &name,
-      boost::shared_ptr<python_untyped_array> a);
+  void set_dense_vector_real(const std::string &name, 
+      boost::python::object dims,
+      boost::python::object real);
+  void set_dense_vector_complex(const std::string &name,
+      boost::python::object dims,
+      boost::python::object real,
+      boost::python::object imag);
+
   void eval(const std::string &str);
 };
 

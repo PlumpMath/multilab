@@ -29,6 +29,23 @@ static int mx_class_to_numpy_type(mxClassID class_id) {
   }
 }
 
+static mxClassID numpy_type_to_mx_class(int npy_type) {
+  switch(npy_type) {
+    case NPY_DOUBLE: return mxDOUBLE_CLASS;
+    case NPY_FLOAT: return mxSINGLE_CLASS;
+    case NPY_BYTE: return mxINT8_CLASS;
+    case NPY_UBYTE: return mxUINT8_CLASS;
+    case NPY_SHORT: return mxINT16_CLASS;
+    case NPY_USHORT: return mxUINT16_CLASS;
+    case NPY_INT: return mxINT32_CLASS;
+    case NPY_UINT: return mxUINT32_CLASS;
+    case NPY_LONGLONG: return mxINT64_CLASS;
+    case NPY_ULONGLONG: return mxUINT64_CLASS;
+    case NPY_BOOL: return mxLOGICAL_CLASS;
+    default: throw std::runtime_error("numpy -> mxClass type error");
+  }
+}
+
 #if 0
 static mxClassID numpy_type_to_mx_class(numpy::array array, 
     bool &is_complex) {
@@ -269,8 +286,76 @@ python_engine::get(const std::string &name) {
   return to_return;
 }
 
-void python_engine::put(const std::string &name, 
-    boost::shared_ptr<python_untyped_array> array) {
+void python_engine::set_dense_vector_real(const std::string &name,
+    boost::python::object py_dims,
+    boost::python::object real) {
+
+  // get dims of vector
+  std::vector<mwSize> ml_dims;
+  ml_dims.resize(len(py_dims));
+  size_t num_elems = 1;
+  for(unsigned i=0; i < ml_dims.size(); ++i) {
+    ml_dims[i] = extract<mwSize>(py_dims[i]);
+    num_elems *= ml_dims[i];
+  }
+
+  // get numpy type -> mxClassID
+  PyArrayObject *array_ptr =
+    reinterpret_cast<PyArrayObject*>(real.ptr());
+  int numpy_type = PyArray_TYPE(array_ptr);
+  mxClassID classID = numpy_type_to_mx_class(numpy_type);
+
+  // create matlab vector
+  mxArray *ml_array = mxCreateNumericArray(ml_dims.size(), &ml_dims[0],
+      classID, mxREAL);
+  if(ml_array == NULL) 
+    throw std::runtime_error("error creating MATLAB array for engine put");
+  untyped_array<true> ml_array_handle(ml_array);
+
+  // copy over data
+  memcpy(mxGetData(ml_array), PyArray_DATA(array_ptr), 
+      detail::matlab_class_size(classID) * num_elems);
+
+  // insert object into matlab
+  engine::put(name, ml_array);
+}
+
+void python_engine::set_dense_vector_complex(const std::string &name,
+    boost::python::object py_dims,
+    boost::python::object real,
+    boost::python::object imag) {
+  // get dims of vector
+  std::vector<mwSize> ml_dims;
+  ml_dims.resize(len(py_dims));
+  size_t num_elems = 1;
+  for(unsigned i=0; i < ml_dims.size(); ++i) {
+    ml_dims[i] = extract<mwSize>(py_dims[i]);
+    num_elems *= ml_dims[i];
+  }
+
+  // get numpy type -> mxClassID
+  PyArrayObject *real_ptr =
+    reinterpret_cast<PyArrayObject*>(real.ptr());
+  PyArrayObject *imag_ptr =
+    reinterpret_cast<PyArrayObject*>(imag.ptr());
+  int numpy_type = PyArray_TYPE(real_ptr);
+  mxClassID classID = numpy_type_to_mx_class(numpy_type);
+
+  // create matlab vector
+  mxArray *ml_array = mxCreateNumericArray(ml_dims.size(), &ml_dims[0],
+      classID, mxCOMPLEX);
+  if(ml_array == NULL)
+    throw std::runtime_error("error creating MATLAB array for engine put");
+  untyped_array<true> ml_array_handle(ml_array);
+
+  // copy over data
+  memcpy(mxGetData(ml_array), PyArray_DATA(real_ptr),
+      detail::matlab_class_size(classID) * num_elems);
+  memcpy(mxGetImagData(ml_array), PyArray_DATA(imag_ptr),
+      detail::matlab_class_size(classID) * num_elems);
+
+  // insert into matlab
+  put(name, ml_array);
 }
 
 void python_engine::eval(const std::string &str) {
@@ -291,6 +376,10 @@ BOOST_PYTHON_MODULE(multilab_private) {
   class_<ml::python_engine>("engine")
     .def(init<std::string>())
     .def("get", &ml::python_engine::get)
+    .def("set_dense_vector_real", 
+        &ml::python_engine::set_dense_vector_real)
+    .def("set_dense_vector_complex",
+        &ml::python_engine::set_dense_vector_complex)
     .def("eval", &ml::python_engine::eval);
   class_<ml::python_untyped_array>
     ("untyped_array")
