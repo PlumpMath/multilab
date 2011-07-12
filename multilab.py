@@ -48,6 +48,14 @@ class engine(object):
     self.engine_.set_dense_vector_real(varname, matlab_ordered.shape,\
         matlab_ordered)
 
+  def set_dense_complex(self, varname, val):
+    matlab_ordered_r = numpy.array(numpy.real(val), dtype=val.dtype, order='F')
+    matlab_ordered_i = numpy/array(numpy.imag(val), dtype=val.dtype,\
+        order='F')
+    self.engine_.set_dense_vector_complex(varname,\
+        matlab_ordered_r.shape,\
+        matlab_ordered_r, matlab_ordered_i)
+
   def pythonize_wrapper_(self, wrapper):
     handler = self.convert_mapping_[wrapper.get_type()]
     if handler is not None:
