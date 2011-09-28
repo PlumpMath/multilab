@@ -604,8 +604,8 @@ extern "C" { \
     memcpy(lhs_buf, lhs, sizeof(mxArray*)*nlhs); \
     memcpy(rhs_buf, rhs, sizeof(mxArray*)*nrhs); \
     try { \
-      funct (nlhs, (multilab::matlab::untyped_array*)lhs_buf, \
-          nrhs, (multilab::matlab::untyped_array*)rhs_buf); \
+      funct (nlhs, (multilab::matlab::untyped_array<false>*)lhs_buf, \
+          nrhs, (multilab::matlab::untyped_array<false>*)rhs_buf); \
       memcpy(lhs, lhs_buf, sizeof(nlhs * sizeof(mxArray*))); \
     } catch(std::exception &e) { \
       mexPrintf("exception in MEX execution: %s\n", e.what()); \
