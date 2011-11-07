@@ -142,7 +142,7 @@ public:
   template<bool B>
   untyped_array(const untyped_array<B> &a) 
       : ptr_(a.get_ptr()) { }
-  virtual ~untyped_array() {
+  ~untyped_array() {
     // do not delete
     //std::cerr << "not deleting untyped_array" << std::endl;
   }
@@ -237,7 +237,7 @@ public:
   untyped_array(mxArray *ptr) 
       : ptr_(ptr) {
   }
-  virtual ~untyped_array() {
+  ~untyped_array() {
     if(ptr_) {
       mxDestroyArray(ptr_);
       //std::cerr << "deleting untyped_array" << std::endl;
@@ -561,7 +561,7 @@ public:
       throw std::runtime_error("error starting MATLAB engine; have you "
           "installed csh to /usr/bin?");
   }
-  virtual ~engine_() {
+  ~engine_() {
     //std::cerr << "closing engine" << std::endl;
     engClose(eng_);
   }
