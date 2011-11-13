@@ -1,11 +1,6 @@
 #ifndef _MULTILAB_MATLAB_HPP_
 #define _MULTILAB_MATLAB_HPP_
 
-// MATLAB includes
-#include <engine.h>
-#include <matrix.h>
-#include <mex.h>
-
 #include <complex>
 #include <iostream>
 #include <stdexcept>
@@ -19,6 +14,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+// MATLAB includes
+// MATLAB's stupid, tell it we've got char16_t
+#define __STDC_UTF_16__
+
+#include <engine.h>
+#include <matrix.h>
+#include <mex.h>
 
 namespace multilab {
 namespace matlab {
@@ -213,6 +216,7 @@ public:
       throw std::runtime_error("error getting field value");
     return m;
   }
+
 
   // assignment from any untyped_array is okay.
   template<bool B>
