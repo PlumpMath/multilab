@@ -22,6 +22,12 @@
 #include <matrix.h>
 #include <mex.h>
 
+#ifndef MULTILAB_NO_SPARSE 
+// include magic for sparse matrices
+#define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+#include <eigen3/Eigen/Sparse>
+#endif
+
 namespace multilab {
 namespace matlab {
 
@@ -30,7 +36,7 @@ struct Sparse { };
 struct Struct { };
 struct Cell { };
 
-// \brief contains nuts and bolts; ignore
+// \brief contains nuts and bolts
 // {{{ detail
 namespace detail {
   template<mxClassID CLASS> struct matlab2cpp { };
@@ -61,6 +67,7 @@ namespace detail {
   // TODO: implement/figure out how to implement these:
   // TIE_MATLAB_CPP(mxUNKNOWN_CLASS, ?)
   // TIE_MATLAB_CPP(mxFUNCTION_CLASS, ?)
+  TIE_MATLAB_CPP(mxSPARSE_CLASS, Sparse, "sparse");
   TIE_MATLAB_CPP(mxCELL_CLASS, Cell, "cell");
   TIE_MATLAB_CPP(mxSTRUCT_CLASS, Struct, "struct");
   TIE_MATLAB_CPP(mxLOGICAL_CLASS, bool, "bool");
@@ -96,6 +103,7 @@ namespace detail {
       case mxLOGICAL_CLASS: return "bool";
       case mxCELL_CLASS: return "cell";
       case mxSTRUCT_CLASS: return "struct";
+      case mxSPARSE_CLASS: return "sparse";
       default: throw std::runtime_error("unhandled MATLAB type");
     }
   }
@@ -296,8 +304,9 @@ public:
   Array<Untyped> get_field(const std::string &name, int i=0) {
     return get_field(field_number(name), i);
   }
-};
+}; // }}}
 
+// {{{ char mxArray (string)
 template<>
 class Array<char> : public ArrayBase<Array<char>> {
 public:
@@ -341,7 +350,79 @@ public:
   bool operator==(const char *c) {
     return *this == std::string(c);
   }
-};
+}; // }}}
+
+#ifndef MULTILAB_NO_SPARSE
+// {{{ Sparse Array 
+template<>
+class Array<Sparse> : public ArrayBase<Array<Sparse>> {
+public:
+  typedef Sparse value_t;
+
+  Array() 
+      : ArrayBase<Array<Sparse>>(nullptr) { }
+  Array(mxArray *ptr)
+      : ArrayBase<Array<Sparse>>(ptr) {
+    this->type_check();
+  }
+  template<typename T>
+  Array(const Array<T> &o)
+      : ArrayBase<Array<Sparse>>(o.ptr()) {
+    this->type_check();
+  }
+  template<typename Scalar>
+  Array(const Eigen::SparseMatrix<Scalar> &m) 
+      : ArrayBase<Array<Sparse>>(nullptr) {
+    *this = m;
+  }
+  // TODO complex sparse arrays
+  ~Array() { }
+
+  template<typename T>
+  Array<Sparse>& operator=(const ArrayBase<T> &t) {
+    this->ptr_ = t.ptr();
+    this->type_check();
+    return *this;
+  }
+
+  template<typename Scalar>
+  Array<Sparse>& operator=(const Eigen::SparseMatrix<Scalar> &sp) {
+    int r = sp.rows();
+    int c = sp.cols();
+    int nz = sp.nonZeros();
+
+    mxArray *m = mxCreateSparse(r, c, nz, mxREAL);
+    if(!m) {
+      throw std::runtime_error("error creating sparse matlab matrix");
+    }
+
+    mwSize *ir, *jc;
+    double *data;
+    ir = mxGetIr(m);
+    jc = mxGetJc(m);
+    data = reinterpret_cast<double*>(mxGetData(m));
+    int idatum = 0;
+
+    for(int k=0; k<sp.cols(); ++k) {
+      bool first = true;
+      for(typename Eigen::SparseMatrix<Scalar>::InnerIterator it(sp, k);
+          it; ++it) {
+        if(first) {
+          jc[k] = idatum;
+          first = false;
+        }
+        ir[idatum] = it.row();
+        data[idatum] = it.value();
+        ++idatum;
+      }
+    }
+    jc[sp.cols()] = nz;
+
+    this->ptr_ = m;
+    return *this;
+  }
+}; // }}}
+#endif
 
 }
 }
