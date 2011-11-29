@@ -317,13 +317,7 @@ public:
   Array<Untyped> get_field(const std::string &name, int i=0) {
     return get_field(field_number(name), i);
   }
-<<<<<<< HEAD
 }; // }}}
-
-// {{{ char mxArray (string)
-=======
-};
-// }}}
 
 // {{{ char Array
 template<>
@@ -444,7 +438,6 @@ public:
 #endif
 };
 
-}
 }
 
 #ifndef MEX_ENTRY_POINT2
