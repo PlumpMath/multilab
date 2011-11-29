@@ -197,6 +197,18 @@ public:
     }
     this->ptr_ = t;
   }
+  template<typename M>
+  Array(const M &m)
+        : ArrayBase<Array<Scalar>>(mxCreateNumericMatrix(
+            m.rows(), m.cols(),
+            detail::cpp2matlab<Scalar>::matlab_class,
+            mxREAL)) {
+    if(!this->ptr_) {
+      throw std::runtime_error("error allocating MATLAB array");
+    }
+    std::copy(m.data(), m.data()+m.rows()*m.cols(), 
+        real_ptr());
+  }
   ~Array() { }
 
   Scalar* real_ptr() const {
@@ -441,7 +453,7 @@ extern "C" { \
     try { \
       funct (nrhs, (UntypedArray*)rhs_buf, \
           nlhs, (UntypedArray*)lhs_buf); \
-      memcpy(lhs, lhs_buf, sizeof(nlhs * sizeof(mxArray*))); \
+      memcpy(lhs, lhs_buf, sizeof(nlhs) * sizeof(mxArray*)); \
     } catch(std::exception &e) { \
       mexPrintf("exception in MEX execution: %s\n", e.what()); \
       mexErrMsgTxt("fatal exception ocurred, aborting MEX execution"); \
