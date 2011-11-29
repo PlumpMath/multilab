@@ -316,9 +316,15 @@ public:
   Array<Untyped> get_field(const std::string &name, int i=0) {
     return get_field(field_number(name), i);
   }
+<<<<<<< HEAD
 }; // }}}
 
 // {{{ char mxArray (string)
+=======
+};
+// }}}
+
+// {{{ char Array
 template<>
 class Array<char> : public ArrayBase<Array<char>> {
 public:
@@ -435,6 +441,7 @@ public:
   }
 }; // }}}
 #endif
+};
 
 }
 }
