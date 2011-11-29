@@ -16,7 +16,8 @@
 
 // MATLAB includes
 // MATLAB's stupid, tell it we've got char16_t
-#define __STDC_UTF_16__
+// n.b., only seemed to cause issues w/ unsupported c++11 builds
+// #define __STDC_UTF_16__
 
 #include <engine.h>
 #include <matrix.h>
