@@ -454,7 +454,7 @@ extern "C" { \
     try { \
       funct (nrhs, (UntypedArray*)rhs_buf, \
           nlhs, (UntypedArray*)lhs_buf); \
-      memcpy(lhs, lhs_buf, sizeof(nlhs) * sizeof(mxArray*)); \
+      memcpy(lhs, lhs_buf, nlhs * sizeof(mxArray*)); \
     } catch(std::exception &e) { \
       mexPrintf("exception in MEX execution: %s\n", e.what()); \
       mexErrMsgTxt("fatal exception ocurred, aborting MEX execution"); \
