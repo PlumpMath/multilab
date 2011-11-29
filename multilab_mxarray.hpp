@@ -26,7 +26,7 @@
 #ifndef MULTILAB_NO_SPARSE 
 // include magic for sparse matrices
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
-#include <eigen3/Eigen/Sparse>
+#include <Eigen/Sparse>
 #endif
 
 namespace multilab {
