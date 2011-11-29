@@ -163,23 +163,23 @@ template<typename T> class Array;
 
 // {{{ dense numeric matrix 
 template<typename Scalar>
-class Array : public ArrayBase<Array<Scalar>> {
+class Array : public ArrayBase<Array<Scalar> > {
 public:
   typedef Scalar value_t;
 
   Array()
-      : ArrayBase<Array<Scalar>>(nullptr) { }
+      : ArrayBase<Array<Scalar> >(NULL) { }
   Array(mxArray *ptr) 
-      : ArrayBase<Array<Scalar>>(ptr) { 
+      : ArrayBase<Array<Scalar> >(ptr) { 
     this->type_check();
   }
   template<typename O>
   Array(const Array<O> &o)
-      : ArrayBase<Array<Scalar>>(o.ptr()) { 
+      : ArrayBase<Array<Scalar> >(o.ptr()) { 
     this->type_check();
   }
   Array(size_t rows, size_t cols, bool is_complex = false)
-        : ArrayBase<Array<Scalar>>(mxCreateNumericMatrix(rows,
+        : ArrayBase<Array<Scalar> >(mxCreateNumericMatrix(rows,
               cols, detail::cpp2matlab<Scalar>::matlab_class,
               is_complex ? mxCOMPLEX : mxREAL)) {
     if(!this->ptr()) {
@@ -187,7 +187,7 @@ public:
     }
   }
   Array(size_t ndim, size_t *dims, bool is_complex = false)
-        : ArrayBase<Array<Scalar>>(nullptr) {
+        : ArrayBase<Array<Scalar> >(NULL) {
     mwSize ml_dims[ndim];
     std::copy(dims, dims+ndim, ml_dims);
     mxArray *t = mxCreateNumericArray(ndim, ml_dims,
@@ -200,7 +200,7 @@ public:
   }
   template<typename M>
   Array(const M &m)
-        : ArrayBase<Array<Scalar>>(mxCreateNumericMatrix(
+        : ArrayBase<Array<Scalar> >(mxCreateNumericMatrix(
             m.rows(), m.cols(),
             detail::cpp2matlab<Scalar>::matlab_class,
             mxREAL)) {
@@ -239,17 +239,17 @@ public:
 
 // {{{ untyped Array 
 template<>
-class Array<Untyped> : public ArrayBase<Array<Untyped>> {
+class Array<Untyped> : public ArrayBase<Array<Untyped> > {
 public:
   typedef Untyped value_t;
 
   Array() 
-      : ArrayBase<Array<Untyped>>(nullptr) { }
+      : ArrayBase<Array<Untyped> >(NULL) { }
   Array(mxArray *ptr) 
-      : ArrayBase<Array<Untyped>>(ptr) { }
+      : ArrayBase<Array<Untyped> >(ptr) { }
   template<typename T>
   Array(const Array<T> &o) 
-      : ArrayBase<Array<Untyped>>(o.ptr()) { }
+      : ArrayBase<Array<Untyped> >(o.ptr()) { }
   ~Array() { }
 
   template<typename T>
@@ -262,19 +262,19 @@ public:
 
 // {{{ struct Array
 template<>
-class Array<Struct> : public ArrayBase<Array<Struct>> {
+class Array<Struct> : public ArrayBase<Array<Struct> > {
 public:
   typedef Struct value_t;
 
   Array()
-      : ArrayBase<Array<Struct>>(nullptr) { }
+      : ArrayBase<Array<Struct> >(NULL) { }
   Array(mxArray *ptr)
-      : ArrayBase<Array<Struct>>(ptr) { 
+      : ArrayBase<Array<Struct> >(ptr) { 
     this->type_check();
   }
   template<typename T>
   Array(const Array<T> &o)
-      : ArrayBase<Array<Struct>>(o.ptr()) {
+      : ArrayBase<Array<Struct> >(o.ptr()) {
     this->type_check();
   }
   ~Array() { }
@@ -327,19 +327,19 @@ public:
 
 // {{{ char Array
 template<>
-class Array<char> : public ArrayBase<Array<char>> {
+class Array<char> : public ArrayBase<Array<char> > {
 public:
   typedef char value_t;
 
   Array()
-      : ArrayBase<Array<char>>(nullptr) { }
+      : ArrayBase<Array<char> >(NULL) { }
   Array(mxArray *ptr)
-      : ArrayBase<Array<char>>(ptr) {
+      : ArrayBase<Array<char> >(ptr) {
     this->type_check();
   }
   template<typename T>
   Array(const Array<T> &o)
-      : ArrayBase<Array<char>>(o.ptr()) {
+      : ArrayBase<Array<char> >(o.ptr()) {
     this->type_check();
   }
 
@@ -374,24 +374,24 @@ public:
 #ifndef MULTILAB_NO_SPARSE
 // {{{ Sparse Array 
 template<>
-class Array<Sparse> : public ArrayBase<Array<Sparse>> {
+class Array<Sparse> : public ArrayBase<Array<Sparse> > {
 public:
   typedef Sparse value_t;
 
   Array() 
-      : ArrayBase<Array<Sparse>>(nullptr) { }
+      : ArrayBase<Array<Sparse> >(NULL) { }
   Array(mxArray *ptr)
-      : ArrayBase<Array<Sparse>>(ptr) {
+      : ArrayBase<Array<Sparse> >(ptr) {
     this->type_check();
   }
   template<typename T>
   Array(const Array<T> &o)
-      : ArrayBase<Array<Sparse>>(o.ptr()) {
+      : ArrayBase<Array<Sparse> >(o.ptr()) {
     this->type_check();
   }
   template<typename Scalar>
   Array(const Eigen::SparseMatrix<Scalar> &m) 
-      : ArrayBase<Array<Sparse>>(nullptr) {
+      : ArrayBase<Array<Sparse> >(NULL) {
     *this = m;
   }
   // TODO complex sparse arrays
