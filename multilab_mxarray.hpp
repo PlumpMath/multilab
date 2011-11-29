@@ -297,7 +297,9 @@ public:
     return get_field(field_number(name), i);
   }
 };
+// }}}
 
+// {{{ char Array
 template<>
 class Array<char> : public ArrayBase<Array<char>> {
 public:
@@ -342,6 +344,7 @@ public:
     return *this == std::string(c);
   }
 };
+// }}}
 
 }
 }
