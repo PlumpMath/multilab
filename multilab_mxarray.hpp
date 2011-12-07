@@ -23,7 +23,7 @@
 #include <matrix.h>
 #include <mex.h>
 
-#ifndef MULTILAB_NO_SPARSE 
+#ifdef MULTILAB_SPARSE 
 // include magic for sparse matrices
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Sparse>
@@ -365,7 +365,7 @@ public:
   }
 }; // }}}
 
-#ifndef MULTILAB_NO_SPARSE
+#ifdef MULTILAB_SPARSE
 // {{{ Sparse Array 
 template<>
 class Array<Sparse> : public ArrayBase<Array<Sparse> > {
