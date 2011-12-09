@@ -302,7 +302,7 @@ public:
       field_names_vec.push_back(*field_name_start);
       ++field_name_start;
     }
-    const char **field_names = &field_names[0];
+    const char **field_names = &field_names_vec[0];
     mxArray *ptr = mxCreateStructMatrix(rows, cols,
         field_names_vec.size(), field_names);
     if(!ptr) throw std::runtime_error("error creating field names matrix");
