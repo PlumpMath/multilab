@@ -397,6 +397,55 @@ public:
   }
 }; // }}}
 
+// {{{ cell Array
+template<>
+class Array<Cell> : public ArrayBase<Array<Cell> > {
+public:
+  typedef Cell value_t;
+  typedef Cell value_type;
+
+  Array()
+      : ArrayBase<Array<Cell> >(NULL) { }
+  Array(mxArray *ptr)
+      : ArrayBase<Array<Cell> >(ptr) {
+    this->type_check();
+  }
+  template<typename T>
+  Array(const Array<T> &o)
+      : ArrayBase<Array<Cell> >(o.ptr()) {
+    this->type_check();
+  }
+  Array(size_t rows, size_t cols) 
+      : ArrayBase<Array<Cell> >(mxCreateCellMatrix(rows, cols)) {
+    if(!this->ptr_) {
+      throw std::runtime_error("error creating cell matrix");
+    }
+  }
+  Array(int ndim, size_t *dims)
+      : ArrayBase<Array<Cell> >(mxCreateCellArray(ndim, dims)) {
+    if(!this->ptr_) {
+      throw std::runtime_error("error creating cell array");
+    }
+  }
+  ~Array() { }
+
+  template<typename T>
+  Array<Cell>& operator=(const ArrayBase<T> &t) {
+    this->ptr_ = t.ptr();
+    this->type_check();
+    return *this;
+  }
+
+  Array<Untyped> get(int index) {
+    return mxGetCell(this->ptr_, index);
+  }
+  template<typename T>
+  void set(int index, const Array<T> &m) {
+    mxSetCell(this->ptr_, index, m.ptr());
+  }
+};
+// }}}
+
 #ifdef MULTILAB_SPARSE
 // {{{ Sparse Array 
 template<>
