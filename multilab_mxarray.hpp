@@ -277,6 +277,38 @@ public:
       : ArrayBase<Array<Struct> >(o.ptr()) {
     this->type_check();
   }
+  template<typename I1, typename I2>
+  Array(int ndim, size_t *dims, I1 field_name_start,
+      I2 field_name_end) 
+      : ArrayBase<Array<Struct> >(NULL) {
+    std::vector<const char*> field_names_vec;
+    while(field_name_start != field_name_end) {
+      field_names_vec.push_back(*field_name_start);
+      ++field_name_start;
+    }
+
+    const char **field_names = &field_names[0];
+    mxArray *ptr = mxCreateStructArray(ndim, dims, 
+        field_names_vec.size(), field_names);
+    if(!ptr) throw std::runtime_error("error creating struct array");
+    this->ptr_ = ptr;
+  }
+  template<typename I1, typename I2>
+  Array(size_t rows, size_t cols, I1 field_name_start,
+      I2 field_name_end)
+      : ArrayBase<Array<Struct> >(NULL) {
+    std::vector<const char*> field_names_vec;
+    while(field_name_start != field_name_end) {
+      field_names_vec.push_back(*field_name_start);
+      ++field_name_start;
+    }
+    const char **field_names = &field_names[0];
+    mxArray *ptr = mxCreateStructMatrix(rows, cols,
+        field_names_vec.size(), field_names);
+    if(!ptr) throw std::runtime_error("error creating field names matrix");
+    this->ptr_ = ptr;
+  }
+
   ~Array() { }
 
   template<typename T>
