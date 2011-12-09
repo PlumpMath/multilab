@@ -349,6 +349,16 @@ public:
   Array<Untyped> get_field(const std::string &name, int i=0) {
     return get_field(field_number(name), i);
   }
+
+  template<typename T>
+  void set_field(int fieldnum, Array<T> m, int i=0) {
+    mxSetField(this->ptr_, i, fieldnum, m.ptr());
+  }
+
+  template<typename T>
+  void set_field(const std::string &name, Array<T> m, int i=0) {
+    mxSetField(this->ptr_, i, name.c_str(), m.ptr());
+  }
 }; // }}}
 
 // {{{ char Array
@@ -436,11 +446,11 @@ public:
     return *this;
   }
 
-  Array<Untyped> get(int index) {
+  Array<Untyped> get_cell(int index) {
     return mxGetCell(this->ptr_, index);
   }
   template<typename T>
-  void set(int index, const Array<T> &m) {
+  void set_cell(int index, const Array<T> &m) {
     mxSetCell(this->ptr_, index, m.ptr());
   }
 };
