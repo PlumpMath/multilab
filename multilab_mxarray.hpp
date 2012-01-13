@@ -17,7 +17,9 @@
 // MATLAB includes
 // MATLAB's stupid, tell it we've got char16_t
 // n.b., only seemed to cause issues w/ unsupported c++11 builds
-// #define __STDC_UTF_16__
+#ifdef CPP11
+#define __STDC_UTF_16__
+#endif
 
 #include <engine.h>
 #include <matrix.h>
@@ -186,7 +188,7 @@ public:
       throw std::runtime_error("error allocating MATLAB array");
     }
   }
-  Array(size_t ndim, size_t *dims, bool is_complex = false)
+  Array(size_t ndim, const size_t *dims, bool is_complex = false)
         : ArrayBase<Array<Scalar> >(NULL) {
     mwSize ml_dims[ndim];
     std::copy(dims, dims+ndim, ml_dims);
